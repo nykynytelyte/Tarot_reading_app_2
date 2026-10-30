@@ -1,0 +1,17 @@
+{
+  "name": "tarot",
+  "entrypoint": "sites-worker.js",
+  "compatibilityDate": "2026-10-30",
+  "modules": [
+    {
+      "name": "sites-worker.js",
+      "type": "esm",
+      "path": "./sites-worker.js"
+    }
+  ],
+  "assetsDirectory": "./dist",
+  "assets": {
+    "directory": "./dist"
+  },
+  "spa": true
+}

@@ -1,0 +1,14 @@
+{
+  "name": "Gothic",
+  "description": "A gothic reading of the 78 cards",
+  "ratio": "750 / 1050",
+  "theme": {
+    "background": "#15100D",
+    "glow": "#2A1D15",
+    "panel": "#241A14",
+    "line": "#4D3B2C",
+    "accent": "#C29A4B",
+    "text": "#EADFCB",
+    "muted": "#BDAE98"
+  }
+}
