@@ -2,6 +2,7 @@
   "name": "Standard",
   "description": "Rider-Waite-Smith, 1909",
   "ratio": "480 / 822",
+  "back": 78,
   "theme": {
     "background": "#F4EBDC",
     "glow": "#FFFDF8",

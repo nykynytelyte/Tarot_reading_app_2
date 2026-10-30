@@ -2,6 +2,7 @@
   "name": "Gothic",
   "description": "A gothic reading of the 78 cards",
   "ratio": "750 / 1050",
+  "back": 78,
   "theme": {
     "background": "#15100D",
     "glow": "#2A1D15",

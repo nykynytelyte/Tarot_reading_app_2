@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { loadDeckLibrary } from './lib/decks.js'
 import {
-  CUSTOM_MAX,
   CUSTOM_MIN,
   SPREADS,
   buildSpread,
@@ -41,9 +40,14 @@ export default function App() {
     [library, deckId],
   )
 
+  // A smaller deck must not leave the counter asking for cards it cannot deal.
+  useEffect(() => {
+    if (deck) setCustomCount((n) => clampCount(n, deck.count))
+  }, [deck])
+
   const spread = useMemo(
-    () => buildSpread(spreadKey, customCount),
-    [spreadKey, customCount],
+    () => buildSpread(spreadKey, customCount, deck?.count),
+    [spreadKey, customCount, deck?.count],
   )
 
   function startReading() {
@@ -89,8 +93,8 @@ export default function App() {
           <p>{error}</p>
           <p className="notice-hint">
             Each deck needs its own folder under <code>public/decks/</code> containing{' '}
-            <code>cards.csv</code>, <code>deck.json</code> and images named{' '}
-            <code>0.webp</code> to <code>78.webp</code>.
+            <code>cards.csv</code>, <code>deck.json</code> and images numbered from{' '}
+            <code>0.webp</code>, plus one for the card back.
           </p>
         </div>
       </main>
@@ -176,7 +180,7 @@ export default function App() {
               <div className="counter">
                 <button
                   type="button"
-                  onClick={() => setCustomCount((n) => clampCount(n - 1))}
+                  onClick={() => setCustomCount((n) => clampCount(n - 1, deck.count))}
                   disabled={customCount <= CUSTOM_MIN}
                   aria-label="One card fewer"
                 >
@@ -185,8 +189,8 @@ export default function App() {
                 <span className="counter-value">{customCount}</span>
                 <button
                   type="button"
-                  onClick={() => setCustomCount((n) => clampCount(n + 1))}
-                  disabled={customCount >= CUSTOM_MAX}
+                  onClick={() => setCustomCount((n) => clampCount(n + 1, deck.count))}
+                  disabled={customCount >= deck.count}
                   aria-label="One card more"
                 >
                   +
@@ -194,7 +198,19 @@ export default function App() {
               </div>
             ) : null}
 
-            <button type="button" className="primary" onClick={startReading}>
+            {spread.positions.length > deck.count ? (
+              <p className="notice-hint">
+                This deck holds {deck.count} cards, so it cannot deal{' '}
+                {spread.positions.length}.
+              </p>
+            ) : null}
+
+            <button
+              type="button"
+              className="primary"
+              onClick={startReading}
+              disabled={spread.positions.length > deck.count}
+            >
               Shuffle and draw
             </button>
           </section>
@@ -202,7 +218,9 @@ export default function App() {
           <section className="reading">
             <div className="reading-bar">
               <div>
-                <h2 className="section-label">{buildSpread(reading.spreadKey, reading.cards.length).label}</h2>
+                <h2 className="section-label">
+                  {buildSpread(reading.spreadKey, reading.cards.length, deck.count).label}
+                </h2>
                 <p className="reading-progress">
                   {revealedCount} of {reading.cards.length} revealed
                 </p>
@@ -235,7 +253,7 @@ export default function App() {
 
             <Spread
               deck={deck}
-              spread={buildSpread(reading.spreadKey, reading.cards.length)}
+              spread={buildSpread(reading.spreadKey, reading.cards.length, deck.count)}
               cards={reading.cards}
               onReveal={revealCard}
             />

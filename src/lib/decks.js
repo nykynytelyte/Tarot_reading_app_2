@@ -1,7 +1,6 @@
 import { csvToObjects } from './csv.js'
 
 const BASE = import.meta.env.BASE_URL
-const CARD_BACK = 78
 
 const HEX = /^#[0-9a-f]{3,8}$/i
 const RATIO = /^\d+(?:\.\d+)?\s*\/\s*\d+(?:\.\d+)?$/
@@ -17,13 +16,25 @@ const FALLBACK_THEME = {
 }
 
 // Deck metadata is written by hand in each deck folder, so treat it as
-// untrusted: only accept values that cannot break the stylesheet.
-function safeTheme(theme) {
+// untrusted: only accept values that cannot break the stylesheet. Anything
+// missing or malformed falls back, and says so in the console — a silent
+// fallback is how "the standard deck is suddenly Gothic" happens.
+function safeTheme(theme, deckId) {
   const out = { ...FALLBACK_THEME }
-  for (const [key, value] of Object.entries(theme ?? {})) {
-    if (key in out && typeof value === 'string' && HEX.test(value)) {
+  const missing = []
+  for (const key of Object.keys(FALLBACK_THEME)) {
+    const value = theme?.[key]
+    if (typeof value === 'string' && HEX.test(value)) {
       out[key] = value
+    } else {
+      missing.push(key)
     }
+  }
+  if (missing.length) {
+    console.warn(
+      `[decks] ${deckId}: deck.json has no usable ${missing.join(', ')} — ` +
+        `using the built-in palette for ${missing.length === 1 ? 'it' : 'them'}.`,
+    )
   }
   return out
 }
@@ -34,6 +45,27 @@ function safeRatio(ratio) {
 
 function stripPeriod(text) {
   return String(text ?? '').replace(/\.\s*$/, '')
+}
+
+// Which image is the card back? deck.json can name it with "back"; otherwise it
+// is the number after the highest card, so a deck that simply stops at 51 gets a
+// back at 52. A last row that calls itself a back and carries no meanings is
+// also taken as the back, so a 78-card deck whose row 78 says "Card Back" works
+// even without the field.
+function findBack(meta, byNumber) {
+  const declared = Number(meta?.back)
+  if (Number.isInteger(declared) && declared >= 0) return declared
+
+  let highest = -1
+  for (const number of byNumber.keys()) {
+    if (number > highest) highest = number
+  }
+
+  const top = byNumber.get(highest)
+  if (top && /\bback\b/i.test(top.name) && !top.upright && !top.reversed) {
+    return highest
+  }
+  return highest + 1
 }
 
 function withUrl(deck) {
@@ -58,13 +90,14 @@ async function loadDeck(id) {
   const meta = await metaRes.json()
   const rows = csvToObjects(await csvRes.text())
 
-  const cards = new Map()
+  // Cards are addressed by the `number` column, so the deck is built from the
+  // CSV and never from the image files — 52 cards or 102 work like 78 does.
+  // 0 is a real card (The Fool), so test the number, never for truthiness.
+  const byNumber = new Map()
   for (const row of rows) {
     const number = Number(row.number)
-    // The pool is 0-77. Row 78 is the card back and is not drawable; note that
-    // 0 is a real card (The Fool), so test the number, never for truthiness.
-    if (!Number.isInteger(number) || number < 0 || number > 77) continue
-    cards.set(number, {
+    if (!Number.isInteger(number) || number < 0) continue
+    byNumber.set(number, {
       number,
       name: row.name || `Card ${number}`,
       upright: stripPeriod(row.upright),
@@ -73,8 +106,40 @@ async function loadDeck(id) {
     })
   }
 
-  if (cards.size === 0) {
+  if (byNumber.size === 0) {
     throw new Error(`decks/${id}/cards.csv has no readable cards`)
+  }
+
+  const back = findBack(meta, byNumber)
+  const cards = new Map(byNumber)
+  cards.delete(back)
+
+  if (cards.size === 0) {
+    throw new Error(
+      `decks/${id}/cards.csv leaves no drawable cards once #${back} is the card back`,
+    )
+  }
+
+  const backRow = byNumber.get(back)
+  if (backRow && (backRow.upright || backRow.reversed)) {
+    console.warn(
+      `[decks] ${id}: #${back} is treated as the card back, but cards.csv gives ` +
+        `it a meaning — it will never be dealt.`,
+    )
+  }
+
+  // A gap in the numbering is otherwise silent: that card simply never appears
+  // and the deck quietly gets smaller. Name the numbers that are missing.
+  const highestRow = Math.max(...byNumber.keys())
+  const gaps = []
+  for (let n = 0; n <= highestRow; n++) {
+    if (!byNumber.has(n)) gaps.push(n)
+  }
+  if (gaps.length) {
+    console.warn(
+      `[decks] ${id}: cards.csv has no row for #${gaps.join(', #')} — ` +
+        `those cards cannot be dealt.`,
+    )
   }
 
   return withUrl({
@@ -82,9 +147,10 @@ async function loadDeck(id) {
     name: typeof meta.name === 'string' && meta.name ? meta.name : id,
     description: typeof meta.description === 'string' ? meta.description : '',
     ratio: safeRatio(meta.ratio),
-    theme: safeTheme(meta.theme),
+    theme: safeTheme(meta.theme, id),
     cards,
-    back: CARD_BACK,
+    count: cards.size,
+    back,
   })
 }
 

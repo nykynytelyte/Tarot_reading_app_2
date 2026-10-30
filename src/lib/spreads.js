@@ -48,25 +48,28 @@ export const SPREADS = [
 ]
 
 export const CUSTOM_MIN = 1
-export const CUSTOM_MAX = 78
 
 export function findSpread(key) {
   return SPREADS.find((s) => s.key === key) ?? SPREADS[0]
 }
 
-export function clampCount(n) {
+// The ceiling is the deck's own size, never a fixed number of cards.
+export function clampCount(n, max) {
+  const limit = Number(max)
+  const ceiling =
+    Number.isFinite(limit) && limit >= CUSTOM_MIN ? Math.floor(limit) : Number.POSITIVE_INFINITY
   const value = Math.round(Number(n))
-  if (!Number.isFinite(value)) return CUSTOM_MIN
-  return Math.min(CUSTOM_MAX, Math.max(CUSTOM_MIN, value))
+  if (!Number.isFinite(value)) return Math.min(CUSTOM_MIN, ceiling)
+  return Math.min(ceiling, Math.max(CUSTOM_MIN, value))
 }
 
 // Resolve a spread to a concrete list of positions, filling in a grid for the
 // custom count.
-export function buildSpread(key, customCount) {
+export function buildSpread(key, customCount, maxCount) {
   const spread = findSpread(key)
   if (spread.key !== 'custom') return spread
 
-  const count = clampCount(customCount)
+  const count = clampCount(customCount, maxCount)
   return {
     ...spread,
     positions: Array.from({ length: count }, (_, i) => ({
@@ -88,12 +91,19 @@ export function shuffle(items) {
   return out
 }
 
-// Draw without replacement, and give each card an orientation.
+// Draw without replacement, and give each card an orientation. Dealing more
+// cards than the deck holds is an error, not a wrap-around: the old modulo
+// dealt the same card twice in one reading, which was invisible and wrong.
 export function drawCards(deck, positions) {
   const pool = shuffle([...deck.cards.keys()])
+  if (positions.length > pool.length) {
+    throw new Error(
+      `The ${deck.name} deck holds ${pool.length} cards, so it cannot deal ${positions.length}.`,
+    )
+  }
   return positions.map((position, i) => ({
     position,
-    number: pool[i % pool.length],
+    number: pool[i],
     reversed: Math.random() < 0.5,
     revealed: false,
   }))
