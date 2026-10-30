@@ -1,5 +1,14 @@
 {
   "name": "Standard",
   "description": "Rider-Waite-Smith, 1909",
-  "ratio": "480 / 822"
+  "ratio": "480 / 822",
+  "theme": {
+    "background": "#F4EBDC",
+    "glow": "#FFFDF8",
+    "panel": "#FFFBF3",
+    "line": "#D8C7A8",
+    "accent": "#9C3B33",
+    "text": "#2E241C",
+    "muted": "#7A6A57"
+  }
 }

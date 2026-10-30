@@ -354,7 +354,7 @@ body {
   background: var(--panel);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  box-shadow: 0 10px 24px rgb(0 0 0 / 0.38);
+  box-shadow: 0 8px 20px rgb(0 0 0 / 0.22);
 }
 
 .card-front {
@@ -493,7 +493,9 @@ body {
 code {
   padding: 1px 5px;
   border-radius: 4px;
-  background: rgb(255 255 255 / 0.08);
+  /* Tied to the deck's text colour so it stays visible on light and dark
+     themes alike; a fixed white wash disappeared on the parchment deck. */
+  background: color-mix(in srgb, var(--text) 12%, transparent);
   font-size: 0.9em;
 }
 
