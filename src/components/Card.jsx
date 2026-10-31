@@ -4,7 +4,7 @@ import { useState } from 'react'
 // a themed placeholder holding the card's name and number, so you can see at a
 // glance which file is absent. The `key` on each Art below resets this when the
 // card or the deck changes (a re-shuffle reuses the same Card component).
-function Art({ deck, number, alt, label }) {
+export function Art({ deck, number, alt, label }) {
   const [failed, setFailed] = useState(false)
   const src = deck.imageUrl(number)
 

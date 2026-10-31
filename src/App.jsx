@@ -9,6 +9,7 @@ import {
 } from './lib/spreads.js'
 import Spread from './components/Spread.jsx'
 import Details from './components/Details.jsx'
+import DeckPage from './components/DeckPage.jsx'
 
 export default function App() {
   const [library, setLibrary] = useState(null)
@@ -18,6 +19,7 @@ export default function App() {
   const [spreadKey, setSpreadKey] = useState('three')
   const [customCount, setCustomCount] = useState(5)
   const [reading, setReading] = useState(null)
+  const [view, setView] = useState('reading')
 
   useEffect(() => {
     let alive = true
@@ -134,22 +136,46 @@ export default function App() {
               {deck.name} — {deck.description}
             </p>
           </div>
-          <div className="deck-switch" role="group" aria-label="Deck">
-            {library.decks.map((option) => (
+          <div className="masthead-tools">
+            {/* The reading is state on App, not on the sections, so looking at
+                the cards and coming back keeps the spread you were dealt. */}
+            <nav className="view-switch" aria-label="Page">
               <button
-                key={option.id}
                 type="button"
-                className={`pill ${option.id === deck.id ? 'is-active' : ''}`}
-                onClick={() => setDeckId(option.id)}
-                aria-pressed={option.id === deck.id}
+                className={`pill ${view === 'reading' ? 'is-active' : ''}`}
+                onClick={() => setView('reading')}
+                aria-pressed={view === 'reading'}
               >
-                {option.name}
+                Reading
               </button>
-            ))}
+              <button
+                type="button"
+                className={`pill ${view === 'cards' ? 'is-active' : ''}`}
+                onClick={() => setView('cards')}
+                aria-pressed={view === 'cards'}
+              >
+                The cards
+              </button>
+            </nav>
+            <div className="deck-switch" role="group" aria-label="Deck">
+              {library.decks.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  className={`pill ${option.id === deck.id ? 'is-active' : ''}`}
+                  onClick={() => setDeckId(option.id)}
+                  aria-pressed={option.id === deck.id}
+                >
+                  {option.name}
+                </button>
+              ))}
+            </div>
           </div>
         </header>
 
-        {!reading ? (
+        {view === 'cards' ? (
+          <DeckPage deck={deck} />
+        ) : !reading ? (
           <section className="setup">
             <h2 className="section-label">Choose a spread</h2>
             <div className="spread-picker">
