@@ -58,8 +58,7 @@ and each one is randomly upright or reversed.
 
 `deck.json` carries the theme colours and card aspect ratio, so choosing a deck
 restyles the page and swaps the art in place. Doing that mid-reading re-skins the
-same cards rather than re-drawing them — you keep your reading, it just changes
-costume.
+same cards rather than re-drawing them — you keep your reading.
 
 ## Layout
 
